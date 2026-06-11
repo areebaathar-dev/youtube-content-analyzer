@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Content Analyzer & Downloader System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0A0A0B;
+            --card: #151518;
+            --card-hover: #1C1C20;
+            --border: #2A2A2E;
+            --text: #E4E4E7;
+            --text-muted: #A1A1AA;
+            --primary: #FF0000;
+            --primary-hover: #CC0000;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --gradient: linear-gradient(135deg, #FF0000 0%, #FF4500 100%);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+        
+        /* Header */
+        .header { text-align: center; margin-bottom: 3rem; }
+        .logo {
+            font-size: 2.5rem; font-weight: 700; 
+            background: var(--gradient); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+        .accuracy-badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: var(--card); border: 1px solid var(--border);
+            padding: 0.5rem 1rem; border-radius: 2rem; margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .accuracy-badge .dot {
+            width: 8px; height: 8px; background: var(--success);
+            border-radius: 50%; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Input Card */
+        .input-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 2rem; margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .input-group { display: flex; gap: 1rem; }
+        .input {
+            flex: 1; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 0.75rem; padding: 1rem 1.25rem; color: var(--text);
+            font-size: 1rem; transition: all 0.2s;
+        }
+        .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,0,0,0.1); }
+        .btn {
+            background: var(--gradient); border: none; border-radius: 0.75rem;
+            padding: 1rem 2rem; color: white; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255,0,0,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        /* Status */
+        .status-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem; display: none;
+        }
+        .status-card.active { display: block; }
+        .progress-bar {
+            width: 100%; height: 6px; background: var(--border);
+            border-radius: 3px; overflow: hidden; margin-top: 1rem;
+        }
+        .progress-fill {
+            height: 100%; background: var(--gradient); width: 0%;
+            transition: width 0.3s ease; animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        
+        /* Results Grid */
+        .results { display: none; }
+        .results.active { display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1.5rem; transition: all 0.2s;
+        }
+        .card:hover { background: var(--card-hover); transform: translateY(-2px); }
+        .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .card-icon {
+            width: 40px; height: 40px; border-radius: 0.5rem;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,0,0,0.1); color: var(--primary);
+        }
+        .card-title { font-weight: 600; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; }
+        .card-value { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .card-desc { font-size: 0.9rem; color: var(--text-muted); }
+        
+        /* Metrics */
+        .metric-good { color: var(--success); }
+        .metric-warn { color: var(--warning); }
+        .metric-bad { color: var(--danger); }
+        
+        /* Tags */
+        .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        .tag {
+            background: var(--bg); border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.85rem;
+        }
+        
+        /* AI Section */
+        .ai-card {
+            background: linear-gradient(135deg, rgba(255,0,0,0.05) 0%, rgba(255,69,0,0.05) 100%);
+            border: 1px solid rgba(255,0,0,0.2);
+        }
+        
+        /* Actions */
+        .actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .btn-secondary {
+            background: var(--card); border: 1px solid var(--border); color: var(--text);
+        }
+        .btn-secondary:hover { background: var(--card-hover); box-shadow: none; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .input-group { flex-direction: column; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo"><i class="fab fa-youtube"></i> YouTube Content Analyzer</div>
+            <p class="subtitle">YouTube Video Performance & Category Prediction</p>
+            <div class="accuracy-badge">
+                <span class="dot"></span>
+                <span>Model Accuracy: <strong id="modelAccuracy">Loading...</strong></span>
+            </div>
+        </div>
+
+        <div class="input-card">
+            <div class="input-group">
+                <input type="text" id="urlInput" class="input" placeholder="Paste YouTube video URL here...">
+                <button id="analyzeBtn" class="btn">
+                    <i class="fas fa-rocket"></i> Analyze Video
+                </button>
+            </div>
+        </div>
+
+        <div id="statusCard" class="status-card">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span id="statusText">Starting...</span>
+            </div>
+            <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+
+        <div id="results" class="results">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-video"></i></div>
+                        <div class="card-title">Video Info</div>
+                    </div>
+                    <div id="videoTitle" style="font-weight: 600; margin-bottom: 1rem;"></div>
+                    <div class="card-desc">
+                        <i class="fas fa-eye"></i> <span id="views"></span> views • 
+                        <i class="fas fa-thumbs-up"></i> <span id="likes"></span> likes
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <span class="tag" id="category"></span>
+                        <span class="tag" id="bestTime"></span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="card-title">Viral Score</div>
+                    </div>
+                    <div class="card-value" id="viralScore">0</div>
+                    <div class="card-desc">Likes to views ratio</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="card-title">Engagement</div>
+                    </div>
+                    <div class="card-value" id="engagement">0</div>
+                    <div class="card-desc">Weighted engagement rate</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-fire"></i></div>
+                        <div class="card-title">Trending Score</div>
+                    </div>
+                    <div class="card-value" id="trending">0</div>
+                    <div class="card-desc">Combined performance index</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-image"></i></div>
+                        <div class="card-title">Thumbnail Score</div>
+                    </div>
+                    <div class="card-value" id="thumbnailScore">0/10</div>
+                    <div class="card-desc">CTR potential estimate</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="card-title">Copyright Risk</div>
+                    </div>
+                    <div class="card-value" id="copyright">0%</div>
+                    <div class="card-desc">Based on title keywords</div>
+                </div>
+            </div>
+
+            <div class="card ai-card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-robot"></i></div>
+                    <div class="card-title">AI Insights</div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong><i class="fas fa-lightbulb"></i> Suggestion:</strong>
+                    <p id="suggestion" style="margin-top: 0.5rem; color: var(--text-muted);"></p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong><i class="fas fa-graduation-cap"></i> Content Coach:</strong>
+                    <p id="coach" style="margin-top: 0.5rem; color: var(--text-muted);"></p>
+                </div>
+                <div>
+                    <strong><i class="fas fa-info-circle"></i> Explanation:</strong>
+                    <p id="explanation" style="margin-top: 0.5rem; color: var(--text-muted);"></p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-tags"></i></div>
+                    <div class="card-title">SEO Tags</div>
+                </div>
+                <div class="tags" id="seoTags"></div>
+            </div>
+
+            <div class="actions">
+                <button id="downloadBtn" class="btn"><i class="fas fa-download"></i> Download Video</button>
+                <button id="reportBtn" class="btn btn-secondary"><i class="fas fa-file-pdf"></i> Download PDF Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let pollInterval = null;
+
+        const urlInput = document.getElementById('urlInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const statusCard = document.getElementById('statusCard');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const results = document.getElementById('results');
+
+        // Get model accuracy on load
+        fetch('/status/dummy').then(r => r.json()).then(data => {
+            if(data.accuracy) document.getElementById('modelAccuracy').textContent = data.accuracy + '%';
+        });
+
+        analyzeBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) return alert('Please enter a YouTube URL');
+            
+            analyzeBtn.disabled = true;
+            results.classList.remove('active');
+            statusCard.classList.add('active');
+            progressFill.style.width = '10%';
+            statusText.textContent = 'Starting...';
+
+            try {
+                const res = await fetch('/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+                currentTaskId = data.task_id;
+                pollStatus();
+            } catch (e) {
+                alert('Error: ' + e.message);
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function pollStatus() {
+            pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/status/${currentTaskId}`);
+                    const data = await res.json();
+                    
+                    statusText.textContent = data.status || 'Processing...';
+                    
+                    if (data.status === 'Fetching...') progressFill.style.width = '30%';
+                    if (data.status === 'Downloading...') progressFill.style.width = '70%';
+                    
+                    if (data.status === 'Completed') {
+                        clearInterval(pollInterval);
+                        progressFill.style.width = '100%';
+                        setTimeout(() => {
+                            statusCard.classList.remove('active');
+                            displayResults(data);
+                            analyzeBtn.disabled = false;
+                        }, 500);
+                    }
+                    
+                    if (data.status && data.status.startsWith('Error')) {
+                        clearInterval(pollInterval);
+                        alert(data.status);
+                        statusCard.classList.remove('active');
+                        analyzeBtn.disabled = false;
+                    }
+                } catch (e) {
+                    clearInterval(pollInterval);
+                    alert('Polling error');
+                    analyzeBtn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        function displayResults(data) {
+            document.getElementById('videoTitle').textContent = data.title;
+            document.getElementById('views').textContent = data.views.toLocaleString();
+            document.getElementById('likes').textContent = data.likes.toLocaleString();
+            document.getElementById('category').textContent = data.category;
+            document.getElementById('bestTime').innerHTML = `<i class="far fa-clock"></i> ${data.best_time}`;
+            document.getElementById('modelAccuracy').textContent = data.accuracy + '%';
+            
+            setMetric('viralScore', data.viral_score);
+            setMetric('engagement', data.engagement);
+            setMetric('trending', data.trending);
+            setMetric('thumbnailScore', data.thumbnail_score, '/10');
+            setMetric('copyright', data.copyright, '%');
+            
+            document.getElementById('suggestion').textContent = data.suggestion;
+            document.getElementById('coach').textContent = data.coach;
+            document.getElementById('explanation').textContent = data.explanation;
+            
+            const tagsDiv = document.getElementById('seoTags');
+            tagsDiv.innerHTML = data.seo_tags.map(tag => `<span class="tag">#${tag}</span>`).join('');
+            
+            document.getElementById('downloadBtn').onclick = () => window.open(`/file/${data.file}`, '_blank');
+            document.getElementById('reportBtn').onclick = () => window.open(`/report/${currentTaskId}`, '_blank');
+            
+            results.classList.add('active');
+        }
+        
+        function setMetric(id, value, suffix = '') {
+            const el = document.getElementById(id);
+            el.textContent = value + suffix;
+            el.className = 'card-value';
+            if (value >= 7) el.classList.add('metric-good');
+            else if (value >= 4) el.classList.add('metric-warn');
+            else el.classList.add('metric-bad');
+        }
+    </script>
+</body>
+</html>

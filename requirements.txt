@@ -1,0 +1,6 @@
+Flask
+yt-dlp
+scikit-learn
+numpy
+pandas
+reportlab
